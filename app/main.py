@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Product, PriceHistory
-from app.product_services import sincronizar
+from app.product_services import sincronizar, resumen_producto
 from fastapi import FastAPI
 
 app = FastAPI(title="PreciosAR")
