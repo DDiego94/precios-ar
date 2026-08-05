@@ -46,3 +46,26 @@ def sincronizar(query: str) -> int:
         raise
     finally:
         sesion.close()
+
+def actualizar_todos() -> int:
+    sesion = SessionLocal()
+    try:
+        productos = sesion.query(Product).all()
+        actualizados = 0
+        for producto in productos:
+            dato = obtener_producto_por_id(producto.product_id)
+            if dato:
+                if dato.get("productName"):
+                    producto.name = dato["productName"]
+                if dato.get("brand"):
+                    producto.brand = dato["brand"]
+                sesion.flush()
+                registrar_precio(sesion, producto, dato)
+                actualizados += 1
+        sesion.commit()
+        return actualizados
+    except Exception:
+        sesion.rollback()
+        raise
+    finally:
+        sesion.close()

@@ -12,3 +12,11 @@ def buscar_productos(query, limite=4):
         respuesta = client.get(DIA_URL, params=params)
         respuesta.raise_for_status()
         return respuesta.json()
+
+def obtener_producto_por_id(product_id: str) -> dict | None:
+    params = {"fq": f"productId:{product_id}", "_from": 0, "_to": 0}
+    with httpx.Client(timeout=15) as client:
+        respuesta = client.get(DIA_URL, params=params)
+        respuesta.raise_for_status()
+        datos = respuesta.json()
+        return datos[0] if datos else None
