@@ -68,3 +68,37 @@ def actualizar_todos() -> int:
         raise
     finally:
         sesion.close()
+
+def resumen_producto(sesion: Session, product_id: int) -> dict | None:
+    producto = sesion.query(Product).filter(Product.id == product_id).first()
+    if not producto:
+        return None
+
+    lag_precio = func.lag(PriceHistory.price).over(
+        partition_by=PriceHistory.product_id, order_by=PriceHistory.checked_at
+    )
+    filas = sesion.query(
+        PriceHistory.price,
+        PriceHistory.list_price,
+        PriceHistory.checked_at,
+        lag_precio.label("precio_anterior"),
+        (PriceHistory.price - lag_precio).label("variacion"),
+    ).filter(PriceHistory.product_id == product_id)\
+     .order_by(PriceHistory.checked_at.desc()).all()
+
+    ultima = filas[0]
+    return {
+        "producto": producto.name,
+        "ultimo_precio": float(ultima.price),
+        "ultimo_chequeo": ultima.checked_at,
+        "precio_anterior": float(ultima.precio_anterior) if ultima.precio_anterior is not None else None,
+        "variacion": float(ultima.variacion) if ultima.variacion is not None else None,
+        "mediciones": [
+            {"price": float(f.price),
+             "list_price": float(f.list_price) if f.list_price else None,
+             "precio_anterior": float(f.precio_anterior) if f.precio_anterior is not None else None,
+             "variacion": float(f.variacion) if f.variacion is not None else None,
+             "checked_at": f.checked_at}
+            for f in filas
+        ],
+    }

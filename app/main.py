@@ -48,3 +48,10 @@ def historial_precios(product_id: int, db: Session = Depends(get_db)):
 def sincronizar_productos(query: str = "leche"):
     cantidad = sincronizar(query)
     return {"query": query, "sincronizados": cantidad}
+
+@app.get("/products/{product_id}/resumen")
+def resumen_productos(product_id: int, db: Session = Depends(get_db)):
+    data = resumen_producto(db, product_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return data
