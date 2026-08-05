@@ -7,10 +7,33 @@ from app.product_services import sincronizar, resumen_producto
 from fastapi import FastAPI
 from fastapi.security import HTTPBearer
 from app.security import hash_password, verificar_password, crear_token, validar_token
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
-bearer = HTTPBearer()
-app = FastAPI(title="PreciosAR")
+scheduler = AsyncIOScheduler()
+
+
+def job_actualizar_precios():
+    actualizar_todos()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler.add_job(
+        job_actualizar_precios,
+        trigger="interval",
+        hours=6,
+        next_run_time=datetime.now() + timedelta(minutes=1),
+    )
+    scheduler.start()
+    print("Scheduler iniciado: actualiza precios cada 6 horas")
+    yield
+    scheduler.shutdown()
+
+
+app = FastAPI(title="PreciosAR", lifespan=lifespan)
 
 
 def get_current_user(authorization: str = Depends(bearer), db: Session = Depends(get_db)) -> User:

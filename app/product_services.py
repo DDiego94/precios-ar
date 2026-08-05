@@ -3,6 +3,7 @@ from app.database import SessionLocal
 from app.models import Product, PriceHistory
 from app.dia_client import buscar_productos, obtener_producto_por_id
 from sqlalchemy import func
+from app.product_services import sincronizar, resumen_producto, actualizar_todos
 
 def guardar_producto(sesion: Session, dato) -> Product:
     product = sesion.query(Product).filter(Product.product_id == dato["productId"]).first()
