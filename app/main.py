@@ -13,6 +13,17 @@ bearer = HTTPBearer()
 app = FastAPI(title="PreciosAR")
 
 
+def get_current_user(authorization: str = Depends(bearer), db: Session = Depends(get_db)) -> User:
+    try:
+        username = validar_token(authorization.credentials)
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Token invalido")
+    usuario = db.query(User).filter(User.username == username).first()
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    return usuario
+
+
 @app.get("/")
 def home():
     return {"mensaje": "API de precios de supermercados argentinos"}
@@ -53,17 +64,6 @@ def historial_precios(product_id: int, db: Session = Depends(get_db)):
             for ph in precios
         ]
     }
-
-
-def get_current_user(authorization: str = Depends(bearer), db: Session = Depends(get_db)) -> User:
-    try:
-        username = validar_token(authorization.credentials)
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Token invalido")
-    usuario = db.query(User).filter(User.username == username).first()
-    if not usuario:
-        raise HTTPException(status_code=401, detail="Usuario no encontrado")
-    return usuario
 
 
 @app.post("/sync")
