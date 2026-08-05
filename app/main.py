@@ -3,7 +3,19 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Product, PriceHistory
 from app.product_services import sincronizar
+from fastapi import FastAPI
 
+app = FastAPI(title="PreciosAR")
+
+
+@app.get("/")
+def home():
+    return {"mensaje": "API de precios de supermercados argentinos"}
+
+
+@app.get("/health")
+def status():
+    return {"status": "ok"}
 
 @app.get("/products")
 def listar_productos(db: Session = Depends(get_db)):
