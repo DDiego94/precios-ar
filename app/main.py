@@ -1,7 +1,8 @@
+import jwt
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Product, PriceHistory
+from app.models import Product, PriceHistory, User
 from app.product_services import sincronizar, resumen_producto
 from fastapi import FastAPI
 from fastapi.security import HTTPBearer
@@ -15,6 +16,11 @@ app = FastAPI(title="PreciosAR")
 @app.get("/")
 def home():
     return {"mensaje": "API de precios de supermercados argentinos"}
+
+
+@app.get("/me")
+def perfil(usuario: User = Depends(get_current_user)):
+    return {"username": usuario.username}
 
 
 @app.get("/health")
@@ -49,8 +55,19 @@ def historial_precios(product_id: int, db: Session = Depends(get_db)):
     }
 
 
+def get_current_user(authorization: str = Depends(bearer), db: Session = Depends(get_db)) -> User:
+    try:
+        username = validar_token(authorization.credentials)
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Token invalido")
+    usuario = db.query(User).filter(User.username == username).first()
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    return usuario
+
+
 @app.post("/sync")
-def sincronizar_productos(query: str = "leche"):
+def sincronizar_productos(query: str = "leche", usuario: User = Depends(get_current_user)):
     cantidad = sincronizar(query)
     return {"query": query, "sincronizados": cantidad}
 
@@ -61,17 +78,6 @@ def resumen_productos(product_id: int, db: Session = Depends(get_db)):
     if not data:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return data
-
-
-def get_current_user(authorization: str = Depends(bearer), db: Session = Depends(get_db)) -> User:
-    try:
-        username = validar_token(authorization.credentials)
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Token invalido")
-    usuario = db.query(User).filter(User.username == username).first()
-    if not usuario:
-        raise HTTPException(status_code=401, detail="Usuario no encontrado")
-    return usuario
 
 
 @app.post("/register")
