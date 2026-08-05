@@ -10,7 +10,7 @@ def create_engine_with_retry():
     retires = 5
     while retires > 0:
         try:
-            engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+            engine = create_engine(settings.database_url_psycopg(), pool_pre_ping=True)
             engine.connect()
             return engine
         except Exception:
