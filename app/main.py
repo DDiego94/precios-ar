@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Product, PriceHistory, User
-from app.product_services import sincronizar, resumen_producto
+from app.product_services import sincronizar, resumen_producto, actualizar_todos
 from fastapi import FastAPI
 from fastapi.security import HTTPBearer
 from app.security import hash_password, verificar_password, crear_token, validar_token
@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
+bearer = HTTPBearer()
 scheduler = AsyncIOScheduler()
 
 
