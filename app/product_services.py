@@ -1,8 +1,7 @@
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import Product, PriceHistory
-from app.dia_client import buscar_productos
-
+from app.dia_client import buscar_productos, obtener_producto_por_id
 
 def guardar_producto(sesion: Session, dato) -> Product:
     product = sesion.query(Product).filter(Product.product_id == dato["productId"]).first()
