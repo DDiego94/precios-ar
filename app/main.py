@@ -1,7 +1,7 @@
 import jwt
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.database import get_db, Base, engine
 from app.models import Product, PriceHistory, User
 from app.product_services import sincronizar, resumen_producto, actualizar_todos
 from fastapi import FastAPI
@@ -22,6 +22,7 @@ def job_actualizar_precios():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
     scheduler.add_job(
         job_actualizar_precios,
         trigger="interval",
