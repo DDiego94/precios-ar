@@ -4,7 +4,11 @@ from app.database import get_db
 from app.models import Product, PriceHistory
 from app.product_services import sincronizar, resumen_producto
 from fastapi import FastAPI
+from fastapi.security import HTTPBearer
+from app.security import hash_password, verificar_password, crear_token, validar_token
 
+
+bearer = HTTPBearer()
 app = FastAPI(title="PreciosAR")
 
 
@@ -16,6 +20,7 @@ def home():
 @app.get("/health")
 def status():
     return {"status": "ok"}
+
 
 @app.get("/products")
 def listar_productos(db: Session = Depends(get_db)):
@@ -49,9 +54,39 @@ def sincronizar_productos(query: str = "leche"):
     cantidad = sincronizar(query)
     return {"query": query, "sincronizados": cantidad}
 
+
 @app.get("/products/{product_id}/resumen")
 def resumen_productos(product_id: int, db: Session = Depends(get_db)):
     data = resumen_producto(db, product_id)
     if not data:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return data
+
+
+def get_current_user(authorization: str = Depends(bearer), db: Session = Depends(get_db)) -> User:
+    try:
+        username = validar_token(authorization.credentials)
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Token invalido")
+    usuario = db.query(User).filter(User.username == username).first()
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    return usuario
+
+
+@app.post("/register")
+def registrar(username: str, password: str, db: Session = Depends(get_db)):
+    existe = db.query(User).filter(User.username == username).first()
+    if existe:
+        raise HTTPException(status_code=400, detail="El usuario ya existe")
+    db.add(User(username=username, password_hash=hash_password(password)))
+    db.commit()
+    return {"mensaje": "Usuario creado"}
+
+
+@app.post("/login")
+def login(username: str, password: str, db: Session = Depends(get_db)):
+    usuario = db.query(User).filter(User.username == username).first()
+    if not usuario or not verificar_password(password, usuario.password_hash):
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+    return {"token": crear_token(usuario.username)}
